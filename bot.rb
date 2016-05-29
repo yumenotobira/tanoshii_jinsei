@@ -55,7 +55,7 @@ class Bot
   end
 
   def retrieve
-    word = tags.sample
+    word = @tags.sample
     url = flickr.photos.search(tags: word, sort: "relevance").map{ |i| FlickRaw.url(i) }.sample
     return url
   end
