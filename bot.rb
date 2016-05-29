@@ -33,6 +33,13 @@ class Bot
         @dict.add(l.chomp)
       end
     end
+
+    @tags = Array.new
+    File.open(File.expand_path("../tags.txt", __FILE__)) do |f|
+      f.each_line do |l|
+        @tags << l.chomp
+      end
+    end
   end
 
   def tweet(user: nil, text: nil, in_reply_to_status: nil)
@@ -48,7 +55,7 @@ class Bot
   end
 
   def retrieve
-    word = %w(happy smile enjoy cute 楽しい 嬉しい 幸せ).sample
+    word = tags.sample
     url = flickr.photos.search(tags: word, sort: "relevance").map{ |i| FlickRaw.url(i) }.sample
     return url
   end
