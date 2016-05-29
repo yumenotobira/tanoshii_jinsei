@@ -15,7 +15,7 @@ begin
         if !(/^@\w*/.match(status.text))
           if bot.tsurai?(status.text)
             text = ["人生は楽しい", bot.retrieve].join(" ")
-            bot.tweet(user: user, text: text, in_reply_to_status: status)
+            bot.tweet(user: nil, text: text, in_reply_to_status: nil)
             puts text
           end
         end
