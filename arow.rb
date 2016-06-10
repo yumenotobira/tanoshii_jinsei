@@ -41,7 +41,7 @@ class AROW
 
   def update(features, label)
     margin = margin(features)
-    label_value = label ? 1 : -1
+    label_value = label
 
     return false if label_value * margin >= 1
 
