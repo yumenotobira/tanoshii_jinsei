@@ -25,9 +25,9 @@ begin
         tweet.label = -1
         bot.learn(tweet.tweet, tweet.label)
         bot.output
-        bot.tweet(text: "鬱じゃないとして学習 #{tweet.url}")
+        # bot.tweet(text: "鬱じゃないとして学習 #{tweet.url}")
         tweet.destroy
-      elsif bot.tsurai?(status.text) || rand < 0.2
+      elsif bot.tsurai?(status.text) || rand < 0.05
         text = ["人生は楽しい", bot.retrieve, status.url].join(" ")
         tweet = bot.tweet(text: text)
         id = tweet.id
@@ -42,7 +42,7 @@ begin
         tweet.label = 1
         bot.learn(tweet.tweet, tweet.label)
         bot.output
-        bot.tweet(text: "鬱として学習 #{tweet.url}")
+        # bot.tweet(text: "鬱として学習 #{tweet.url}")
         tweet.destroy
       end
     end
