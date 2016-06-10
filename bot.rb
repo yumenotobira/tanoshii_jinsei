@@ -3,12 +3,13 @@
 require 'twitter'
 require 'dotenv'
 require 'flickraw'
-require 'set'
+require 'natto'
+require './arow.rb'
 
 Dotenv.load
 
 class Bot
-  attr_accessor :rest, :stream
+  attr_accessor :rest, :stream, :arow
   def initialize
     @rest = Twitter::REST::Client.new do |config|
       config.consumer_key = ENV['TWITTER_CONSUMER_KEY']
@@ -27,10 +28,15 @@ class Bot
     FlickRaw.api_key = ENV['FLICKR_API_KEY']
     FlickRaw.shared_secret = ENV['FLICKR_SEC_KEY']
 
-    @dict = Set.new
-    File.open(File.expand_path("../dictionary.txt", __FILE__)) do |f|
+    num_features = `wc -l dictionary.tsv`.split.first
+    @arow = AROW.new(num_features)
+    @natto = Natto::MeCab.new
+    @dict = {}
+    File.open(File.expand_path("../dictionary.tsv", __FILE__)) do |f|
       f.each_line do |l|
-        @dict.add(l.chomp)
+        term, pos, idf = l.split("\t")
+        key = [term, pos]
+        @dict[key] = idf.to_f
       end
     end
 
@@ -50,8 +56,45 @@ class Bot
     end
   end
 
+  def vectorize(text)
+    features = {}
+    @natto.parse(text) do |n|
+      break if n.is_eos?
+      key = [n.surface, n.feature.split(',')[0]]
+      next unless @dict.has_key?(key)
+      features[key] = 0 unless features.has_key?(key)
+      features[key] += 1
+    end
+
+    # 正規化
+    n = 0
+    features.each{ |key, value| n += value * value }
+    features.keys{ |key| features[key] /= Math.sqrt(n) }
+    return features
+  end
+
   def tsurai?(text)
-    @dict.any?{ |d| text =~ /#{d}/ }
+    features = vectorize(text)
+    @arow.predict(features)
+  end
+
+  def learn(text, label)
+    features = vectorize(text)
+    @arow.update(features, label)
+  end
+
+  def output
+    File.open("means.tsv", "w") do |file|
+      @arow.means.each do |key, value|
+        file.puts [key[0], key[1], value].join("\t")
+      end
+    end
+
+    File.open("covariances.tsv", "w") do |file|
+      @arow.covariances.each do |key, value|
+        file.puts [key[0], key[1], value].join("\t")
+      end
+    end
   end
 
   def retrieve
