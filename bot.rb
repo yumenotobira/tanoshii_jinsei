@@ -10,6 +10,8 @@ Dotenv.load
 
 class Bot
   attr_accessor :rest, :stream, :arow
+  UNK_IDF = 12.5640442484431
+
   def initialize
     @rest = Twitter::REST::Client.new do |config|
       config.consumer_key = ENV['TWITTER_CONSUMER_KEY']
@@ -40,6 +42,14 @@ class Bot
       end
     end
 
+    # いらない形態素のパターン
+    @reject_patterns = [
+      /^([a-zA-Z]+)$/, # 半角アルファベットだけで構成
+      /^(\s+)$/, # 空白だけで構成
+      /^(\d+)$/, # 半角数字だけで構成
+      /^([\(\)\[\]\{\}\.\?\+\*\|\\\/:-~=#!"`'<>,%&$^]+)$/, # 半角記号だけで構成
+    ]
+
     @tags = Array.new
     File.open(File.expand_path("../tags.txt", __FILE__)) do |f|
       f.each_line do |l|
@@ -57,13 +67,17 @@ class Bot
   end
 
   def vectorize(text)
-    features = {}
+    features = Hash.new{ 0.0 }
     @natto.parse(text) do |n|
       break if n.is_eos?
+
+      next if @reject_patterns.any?{ |p| n.surface.match(p) }
+      next if n.feature.split(',')[0] == "記号"
+
       key = [n.surface, n.feature.split(',')[0]]
-      next unless @dict.has_key?(key)
-      features[key] = 0 unless features.has_key?(key)
-      features[key] += 1
+
+      idf = @dict.has_key?(key) ? @dict[key] : UNK_IDF
+      features[key] += idf
     end
 
     # 正規化

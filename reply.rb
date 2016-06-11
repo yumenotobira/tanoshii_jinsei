@@ -25,9 +25,22 @@ begin
         tweet.label = -1
         bot.learn(tweet.tweet, tweet.label)
         bot.output
-        # bot.tweet(text: "鬱じゃないとして学習 #{tweet.url}")
         tweet.destroy
-      elsif bot.tsurai?(status.text) || rand < 0.2
+      elsif status.text.index(":学習:")
+        _, _, label, text = status.text.split(":")
+        label = label.to_i
+
+        if label != 1 && label != -1 || text.nil?
+          tweet = "フォーマットエラーのため学習できませんでした"
+          bot.tweet(user: status.user.screen_name, text: tweet, in_reply_to_status: status)
+          next
+        end
+
+        bot.learn(text, label)
+        bot.output
+        tweet = label == 1 ? "鬱として学習" : "鬱じゃないとして学習"
+        bot.tweet(user: status.user.screen_name, text: tweet, in_reply_to_status: status)
+      elsif bot.tsurai?(status.text)
         text = ["人生は楽しい", bot.retrieve, status.url].join(" ")
         tweet = bot.tweet(text: text)
         id = tweet.id

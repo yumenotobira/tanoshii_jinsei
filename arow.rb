@@ -1,5 +1,6 @@
 class AROW
   attr_reader :means, :covariances
+
   def initialize(num_features, r = 0.1)
     @num_features = num_features
     @r = r
