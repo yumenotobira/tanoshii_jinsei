@@ -25,6 +25,10 @@ class AROW
     end
   end
 
+  def margins(features)
+    features.map{ |key, value| [key, @means[key] * value] }.to_h
+  end
+
   def margin(features)
     result = 0.0
 

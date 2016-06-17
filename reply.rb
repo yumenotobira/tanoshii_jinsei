@@ -42,7 +42,8 @@ begin
         bot.tweet(user: status.user.screen_name, text: tweet, in_reply_to_status: status)
       elsif bot.tsurai?(status.text)
         text = ["人生は楽しい", bot.retrieve, status.url].join(" ")
-        tweet = bot.tweet(text: text)
+        media_id = bot.image(status.text)
+        tweet = bot.tweet(text: text, media_ids: media_id)
         id = tweet.id
         puts text
         Tweet.create(jinsei_id: id, tweet: status.text, url: status.url, label: 0)
@@ -55,7 +56,6 @@ begin
         tweet.label = 1
         bot.learn(tweet.tweet, tweet.label)
         bot.output
-        # bot.tweet(text: "鬱として学習 #{tweet.url}")
         tweet.destroy
       end
     end

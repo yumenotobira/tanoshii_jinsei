@@ -4,6 +4,7 @@ require 'twitter'
 require 'dotenv'
 require 'flickraw'
 require 'natto'
+require 'gnuplot'
 require './arow.rb'
 
 Dotenv.load
@@ -58,11 +59,11 @@ class Bot
     end
   end
 
-  def tweet(user: nil, text: nil, in_reply_to_status: nil)
+  def tweet(user: nil, text: nil, in_reply_to_status: nil, media_ids: nil)
     if user
       @rest.update("@#{user} #{text}", in_reply_to_status: in_reply_to_status)
     else
-      @rest.update("#{text}")
+      @rest.update("#{text}", {media_ids: media_ids})
     end
   end
 
@@ -109,6 +110,38 @@ class Bot
         file.puts [key[0], key[1], value].join("\t")
       end
     end
+  end
+
+  def image(text)
+    term_scores = @arow.margins(vectorize(text))
+    Gnuplot.open do |gp|
+      Gnuplot::Plot.new(gp) do |plot|
+        plot.terminal 'png enhanced font "IPA P ゴシック" fontscale 1.2'
+        plot.output "plot.png"
+        plot.ylabel "score"
+        plot.xlabel "terms"
+        plot.grid
+        plot.set 'style fill solid border lc rgb "black"'
+        plot.set "boxwidth 0.5 relative"
+
+        x, y = [], []
+        term_scores.each do |term, value|
+          x << term
+          y << value
+        end
+        total = y.reduce(:+)
+        y << total
+        x << "合計スコア"
+
+        plot.data << Gnuplot::DataSet.new([y,x]) do |ds|
+          ds.using = "1:xtic(2)"
+          ds.with = "boxes lw 2"
+          ds.notitle
+        end
+      end
+    end
+
+    return @rest.upload(File.new("./plot.png"))
   end
 
   def retrieve
